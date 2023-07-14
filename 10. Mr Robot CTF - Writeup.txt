@@ -2,9 +2,11 @@
 
 [*] Target: 10.10.78.221
 
-[Note] You should visit this lab's website, a super cool terminal-style with great intro, try every commands they gave
+[Note] You should visit this lab's website, which a super cool terminal-style with a great intro, try every command they gave
 
 [Question 1] What is key 1? => 073403c8a58a1f80d943455fb30724b9
+
+    # nmap 10.10.78.221 -sV --script=http-enum,vuln --disable-arp-ping -Pn -T 5 -p-
 
     22/tcp  closed ssh
     80/tcp  open   http     Apache httpd
