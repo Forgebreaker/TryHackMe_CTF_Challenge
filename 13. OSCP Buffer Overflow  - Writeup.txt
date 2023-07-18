@@ -1,4 +1,4 @@
-[*] Target: 10.10.50.25y
+[*] Target: 10.10.50.25
 
 [Question 1] What is the EIP offset for OVERFLOW1? => 1978
 
