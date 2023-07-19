@@ -51,7 +51,6 @@
         49161/tcp open  msrpc              Microsoft Windows RPC
         49164/tcp open  msrpc              Microsoft Windows RPC
 
-        Aggressive OS guesses: Microsoft Windows 7 or Windows Server 2008 R2 (97%), Microsoft Windows Home Server 2011 (Windows Server 2008 R2) (96%), Microsoft Windows Server 2008 SP1 (96%), Microsoft Windows Server 2008 SP2 (96%), Microsoft Windows 7 (96%), Microsoft Windows 7 SP0 - SP1 or Windows Server 2008 (96%), Microsoft Windows 7 SP0 - SP1, Windows Server 2008 SP1, Windows Server 2008 R2, Windows 8, or Windows 8.1 Update 1 (96%), Microsoft Windows 7 Ultimate (96%), Microsoft Windows 7 Ultimate SP1 or Windows 8.1 Update 1 (96%), Microsoft Windows 8.1 (96%)
         No exact OS matches for host (test conditions non-ideal).
         Network Distance: 2 hops
         Service Info: Host: GATEKEEPER; OS: Windows; CPE: cpe:/o:microsoft:windows
