@@ -1,10 +1,10 @@
-[*] Target: 10.10.50.25y
+[*] Target: 10.10.50.25
 
 [Question 1] What is the EIP offset for OVERFLOW1? => 1978
 
     [+] First thing first, I open the C:\Users\admin\Desktop\vulnerable-apps\oscp\oscp.exe in the Immunity Debugger, so we can see things more clearly
 
-    [Note] This writeup is gonna be different with every other writeups you can find, because I don't follow the TryHackMe's guide or use the given codes
+    [Note] This writeup is gonna be different from every other writeup you can find because I don't follow TryHackMe's guide or use the given codes
            I will make things easy to understand, so don't be scared, just follow my step
 
     [Step 1] Fuzzing
@@ -80,9 +80,9 @@
     
 [Question 2] In byte order (e.g. \x00\x01\x02) and including the null byte \x00, what were the badchars for OVERFLOW1? => \x00\x07\x2e\xa1
 
-    [+] Badchars just the chars that may crashed the service, each service has its own badchars, so we have to search them manually
+    [+] Badchars are just the chars that may crash the service, each service has its own badchars, so we have to search them manually
 
-        [Note] You can easily find them in the https://github.com/cytopia/badchars
+        [Note] You can easily find them at the https://github.com/cytopia/badchars
 
         import socket
         import sys
@@ -117,7 +117,7 @@
 
         [>>] Since badchars can affect the next byte as well! So the correct answer is \x00\x07\x2e\xa1
 
-[Note] I think I just need to guid you guys the 1st lab, there are 9 left for you to practice, they have exactly the same concept with this one
+[Note] I think I just need to guide you guys to the 1st lab, there are 9 left for you to practice, they have exactly the same concept with this one
 
 [Bonus] Because the OSCP.exe is just a small expanded part of the basic Vulnerable-Apps, which is a popular BOF lab 
         So I will perform a vulnerable command scan, just for you to understand how things work outside this lab
