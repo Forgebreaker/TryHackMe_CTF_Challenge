@@ -2,8 +2,6 @@
 
 [*] Target: 10.10.78.221
 
-[Note] You should visit this lab's website, a super cool terminal-style with great intro, try every commands they gave
-
 [Question 1] What is key 1? => 073403c8a58a1f80d943455fb30724b9
 
     >> nmap -A -v --script=http-enum 10.10.78.221
